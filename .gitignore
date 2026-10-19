@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# Personal IDE settings
+.idea/

@@ -1,0 +1,121 @@
+{
+  "name": "faros-toolbox",
+  "version": "1.0.0",
+  "description": "Install, update and launch the Faros desktop apps (EDBMax, VPNMaster, Shellfish) from one place",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "setup:linux": "bash scripts/setup-linux-sandbox.sh",
+    "icons": "electron scripts/render-icon.js src/renderer/assets/icon.svg build/icon.png:1024 src/renderer/assets/icon.png:256 src/renderer/assets/tray.png:22 src/renderer/assets/tray@2x.png:44 build/icons/16x16.png:16 build/icons/24x24.png:24 build/icons/32x32.png:32 build/icons/48x48.png:48 build/icons/64x64.png:64 build/icons/128x128.png:128 build/icons/256x256.png:256 build/icons/512x512.png:512 && electron scripts/render-icon.js src/renderer/assets/tray-mac.svg src/renderer/assets/trayTemplate.png:22 src/renderer/assets/trayTemplate@2x.png:44",
+    "dist": "electron-builder --linux deb --x64 --publish never",
+    "dist:win": "electron-builder --win nsis --x64 --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "test": "electron test/e2e.js",
+    "test:headless": "bash scripts/headless.sh electron test/e2e.js"
+  },
+  "author": {
+    "name": "Ruben Schroyen",
+    "email": "Ruben.schroyen@faros.be"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "productName": "Faros Toolbox",
+  "homepage": "https://github.com/FarosBelgium/faros-toolbox",
+  "desktopName": "faros-toolbox.desktop",
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "electron": "^44.8.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "be.faros.toolbox",
+    "productName": "Faros Toolbox",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "category": "Development;Utility",
+      "icon": "build/icons",
+      "executableName": "faros-toolbox",
+      "synopsis": "Install and update the Faros desktop apps",
+      "syncDesktopName": true,
+      "desktop": {
+        "entry": {
+          "Name": "Faros Toolbox",
+          "StartupWMClass": "faros-toolbox"
+        }
+      }
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0 | libgtk-3-0t64",
+        "libnss3",
+        "libxss1",
+        "libasound2 | libasound2t64",
+        "pkexec | policykit-1"
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Faros Toolbox",
+      "artifactName": "FarosToolbox-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools",
+      "artifactName": "FarosToolbox-${version}-mac-${arch}.${ext}",
+      "identity": "-",
+      "hardenedRuntime": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "FarosBelgium",
+        "repo": "faros-toolbox",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'">
+  <title>Faros Toolbox</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <img class="logo" src="assets/icon.svg" alt="">
+    <span class="title">Faros Toolbox</span>
+    <span class="spacer"></span>
+    <button id="btn-check" class="btn icon" title="Check for updates">⟳</button>
+    <button id="btn-settings" class="btn icon" title="Settings">⚙</button>
+  </header>
+
+  <main id="view-apps" class="view">
+    <div id="updates-banner" class="banner hidden">
+      <span id="updates-text"></span>
+      <span class="spacer"></span>
+      <button id="btn-update-all" class="btn primary small">Update all</button>
+    </div>
+    <section>
+      <h2 id="h-installed">Installed</h2>
+      <div id="list-installed" class="list"></div>
+    </section>
+    <section>
+      <h2 id="h-available">Available</h2>
+      <div id="list-available" class="list"></div>
+    </section>
+  </main>
+
+  <main id="view-settings" class="view hidden">
+    <div class="settings-head">
+      <button id="btn-back" class="btn icon" title="Back">←</button>
+      <h2>Settings</h2>
+    </div>
+    <label class="toggle"><input type="checkbox" data-setting="autoCheck"><span><b>Check for updates automatically</b><small>At startup and every 4 hours.</small></span></label>
+    <label class="toggle"><input type="checkbox" data-setting="autoUpdate"><span><b>Install updates automatically</b><small id="auto-update-hint">Only apps that aren't running are updated.</small></span></label>
+    <label class="toggle"><input type="checkbox" data-setting="notify"><span><b>Notify me about updates</b><small>A desktop notification once per new version.</small></span></label>
+    <label class="toggle"><input type="checkbox" data-setting="closeToTray"><span><b>Keep running in the tray</b><small>Closing the window keeps the toolbox in the system tray. Quit from the tray menu.</small></span></label>
+    <label class="toggle"><input type="checkbox" data-setting="launchAtLogin"><span><b>Start at login</b><small>Starts hidden in the tray.</small></span></label>
+
+    <h2>Faros Toolbox</h2>
+    <div id="toolbox-update" class="toolbox-update"></div>
+    <button id="btn-logs" class="btn small">Open log folder</button>
+  </main>
+
+  <footer id="footer" class="footer"></footer>
+
+  <div id="menu" class="menu hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>

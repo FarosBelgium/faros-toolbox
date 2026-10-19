@@ -1,0 +1,130 @@
+# Tests and builds Faros Toolbox on Linux, Windows and macOS.
+# On a version tag (v1.2.3) whose tests pass on every OS, the installers are
+# published as a GitHub Release of this repository, where the toolbox's own updater
+# looks for them. Publishing uses the workflow's built-in GITHUB_TOKEN.
+
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+          - name: Windows
+            os: windows-latest
+          - name: macOS
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      ELECTRON_ENABLE_LOGGING: '0'
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Linux setup (virtual display; allow Electron's sandbox from node_modules)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - run: npm ci
+
+      - name: End-to-end tests (local feeds, simulated installs, UI)
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a npm test; else npm test; fi
+
+      # Real install + uninstall of an app from its GitHub Release, through pkexec and
+      # apt-get. Nobody can type a password on CI, so allow pkexec for this user only here.
+      - name: "Linux: install and uninstall a real app with pkexec"
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y pkexec polkitd
+          printf 'polkit.addRule(function(action, subject) {\n  if (action.id == "org.freedesktop.policykit.exec" && subject.user == "%s") return polkit.Result.YES;\n});\n' "$USER" | sudo tee /etc/polkit-1/rules.d/49-ci-pkexec.rules
+          sudo systemctl restart polkit || true
+          xvfb-run -a npx electron test/linux-install-test.js vpnmaster
+
+      # ---- build ----
+      - name: Build .deb
+        if: runner.os == 'Linux'
+        run: npm run dist
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        run: npm run dist:win
+      - name: Build macOS dmg + zip (arm64 and x64)
+        if: runner.os == 'macOS'
+        run: npm run dist:mac
+
+      - name: Install the .deb
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y ./dist/faros-toolbox_*_amd64.deb
+          test -x "/opt/Faros Toolbox/faros-toolbox"
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: faros-toolbox-${{ runner.os }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            dist/*.deb
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.blockmap
+            dist/latest*.yml
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release; only this job gets write access
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check that the tag matches package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then echo "Tag $GITHUB_REF_NAME does not match package.json version $version"; exit 1; fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la release
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "Faros Toolbox ${GITHUB_REF_NAME#v}" \
+            --notes "Installers for Linux (.deb), Windows (.exe) and macOS (.dmg, Apple Silicon and Intel). The installed toolbox updates itself from this page."
