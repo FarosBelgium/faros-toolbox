@@ -317,6 +317,7 @@ app.whenReady().then(async () => {
   const failed = results.filter((r) => !r.ok).length;
   console.log(`\n${results.length - failed} passed, ${failed} failed`);
   server.close();
-  fs.rmSync(tmp, { recursive: true, force: true });
+  // Windows: Chromium still has files open in the profile folder; the OS cleans %TEMP% later.
+  try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* ignore */ }
   app.exit(failed ? 1 : 0);
 });
